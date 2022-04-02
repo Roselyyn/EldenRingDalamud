@@ -58,7 +58,6 @@ namespace EldenRing
         private readonly string synthesisFailsMessage;
 
         private readonly Stopwatch time = new Stopwatch();
-        //private readonly SoundPlayer player;
 
         private AudioHandler audioHandler { get; init; }
 
