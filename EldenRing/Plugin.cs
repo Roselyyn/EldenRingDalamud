@@ -22,12 +22,12 @@ using Dalamud.Utility;
 using ImGuiNET;
 using ImGuiScene;
 using Lumina.Excel.GeneratedSheets;
-using Serilog;
 
 using Condition = Dalamud.Game.ClientState.Conditions.Condition;
 using Dalamud.Game.Command;
 using Dalamud.IoC;
 using Dalamud.Plugin;
+using Dalamud.Logging;
 using EldenRing.Audio;
 
 namespace EldenRing
@@ -124,7 +124,7 @@ namespace EldenRing
 
             if (erDeathBgTexture == null || erNormalDeathTexture == null || erCraftFailedTexture == null)
             {
-                Log.Error("Elden: Failed to load images");
+                PluginLog.Error("Elden: Failed to load images");
                 return;
             }
 
@@ -167,7 +167,7 @@ namespace EldenRing
             if (message.TextValue.Contains(this.synthesisFailsMessage))
             {
                 this.PlayAnimation(DeathType.CraftFailed);
-                Log.Information("Elden: Craft failed");
+                PluginLog.Verbose("Elden: Craft failed");
             }
         }
 
@@ -179,7 +179,7 @@ namespace EldenRing
             if (isUnconscious && !this.lastFrameUnconscious)
             {
                 this.PlayAnimation(DeathType.Death);
-                Log.Information($"Elden: Player died {isUnconscious}");
+                PluginLog.Verbose($"Elden: Player died {isUnconscious}");
             }
 
             this.lastFrameUnconscious = isUnconscious;
@@ -376,7 +376,7 @@ namespace EldenRing
                         if (name == "IsSndSe")
                         {
                             var value = entry.Value.UInt;
-                            Log.Information("Elden: {Name} - {Type} - {Value}", name, entry.Type, value);
+                            PluginLog.Verbose("Elden: {Name} - {Type} - {Value}", name, entry.Type, value);
 
                             seEnabled = value == 0;
                         }
@@ -384,7 +384,7 @@ namespace EldenRing
                         if (name == "IsSndMaster")
                         {
                             var value = entry.Value.UInt;
-                            Log.Information("Elden: {Name} - {Type} - {Value}", name, entry.Type, value);
+                            PluginLog.Verbose("Elden: {Name} - {Type} - {Value}", name, entry.Type, value);
 
                             masterEnabled = value == 0;
                         }
@@ -395,7 +395,7 @@ namespace EldenRing
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "Elden: Error checking if sfx is enabled");
+                PluginLog.Error(ex, "Elden: Error checking if sfx is enabled");
                 return true;
             }
         }
@@ -414,7 +414,7 @@ namespace EldenRing
             try
             {
                 var newVol = int.Parse(vol) / 100f;
-                Log.Debug($"{Name}: Setting volume to {newVol}");
+                PluginLog.Debug($"{Name}: Setting volume to {newVol}");
                 audioHandler.Volume = newVol;
                 chatGui.Print($"Volume set to {vol}%");
             }
@@ -426,7 +426,7 @@ namespace EldenRing
 
         private void OnCommand(string command, string args)
         {
-            Log.Debug("{Command} - {Args}", command, args);
+            PluginLog.Debug("{Command} - {Args}", command, args);
             var argList = args.Split(' ');
 
             if (argList.Length == 0) return;
