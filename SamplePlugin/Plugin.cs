@@ -29,7 +29,7 @@ using Dalamud.Game.Command;
 using Dalamud.IoC;
 using Dalamud.Plugin;
 
-namespace SamplePlugin
+namespace EldenRing
 {
     public class Fools22 : IDalamudPlugin
     {

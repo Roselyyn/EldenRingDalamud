@@ -2,7 +2,7 @@
 using Dalamud.Plugin;
 using System;
 
-namespace SamplePlugin
+namespace EldenRing
 {
     [Serializable]
     public class Configuration : IPluginConfiguration
