@@ -28,10 +28,11 @@ using Condition = Dalamud.Game.ClientState.Conditions.Condition;
 using Dalamud.Game.Command;
 using Dalamud.IoC;
 using Dalamud.Plugin;
+using EldenRing.Audio;
 
 namespace EldenRing
 {
-    public class Fools22 : IDalamudPlugin
+    public class EldenRing : IDalamudPlugin
     {
         public string Name => "Elden Ring April Fools";
 
@@ -43,6 +44,7 @@ namespace EldenRing
         private PluginUI PluginUi { get; init; }
         private DataManager DataManager { get; init; }
         private Framework framework { get; init; }
+        [PluginService]
         private ChatGui chatGui { get; init; }
         private GameNetwork gameNetwork { get; init; }
         private Condition condition { get; init; }
@@ -56,7 +58,10 @@ namespace EldenRing
         private readonly string synthesisFailsMessage;
 
         private readonly Stopwatch time = new Stopwatch();
-        private readonly SoundPlayer player;
+        //private readonly SoundPlayer player;
+
+        private AudioHandler audioHandler { get; init; }
+
 
         private bool assetsReady = false;
 
@@ -94,7 +99,7 @@ namespace EldenRing
             EnemyFelled,
         }
 
-        public Fools22(DalamudPluginInterface pluginInterface, DataManager dataManager, Framework frameworkP, ChatGui chat, GameNetwork game, Condition Condition, CommandManager commandManager)
+        public EldenRing(DalamudPluginInterface pluginInterface, DataManager dataManager, Framework frameworkP, ChatGui chat, GameNetwork game, Condition Condition, CommandManager commandManager)
         {
             PluginInterface = pluginInterface;
             DataManager = dataManager;
@@ -116,20 +121,19 @@ namespace EldenRing
             erCraftFailedTexture = PluginInterface.UiBuilder.LoadImage(Path.Combine(PluginInterface.AssemblyLocation.Directory?.FullName!, "er_craft_failed.png"))!;
             erEnemyFelledTexture = PluginInterface.UiBuilder.LoadImage(Path.Combine(PluginInterface.AssemblyLocation.Directory?.FullName!, "er_enemy_felled.png"))!;
 
-            var soundBytes = File.ReadAllBytes(Path.Combine(PluginInterface.AssemblyLocation.Directory?.FullName!, "snd_death_er.wav"));
-            player = new SoundPlayer(new MemoryStream(soundBytes));
+            audioHandler = new(Path.Combine(PluginInterface.AssemblyLocation.Directory?.FullName!, "snd_death_er.wav"));
 
             if (erDeathBgTexture == null || erNormalDeathTexture == null || erCraftFailedTexture == null)
             {
-                Log.Error("Fools22: Failed to load images");
+                Log.Error("Elden: Failed to load images");
                 return;
             }
 
 
-            /*CommandManager.AddHandler(commandName, new CommandInfo(OnCommand)
+            CommandManager.AddHandler(commandName, new CommandInfo(OnCommand)
             {
                 HelpMessage = "A useful message to display in /xlhelp"
-            });*/
+            });
 
 
             synthesisFailsMessage = DataManager.GetExcelSheet<LogMessage>()!.GetRow(1160)!.Text.ToDalamudString().TextValue;
@@ -164,7 +168,7 @@ namespace EldenRing
             if (message.TextValue.Contains(this.synthesisFailsMessage))
             {
                 this.PlayAnimation(DeathType.CraftFailed);
-                Log.Information("Fools22: Craft failed");
+                Log.Information("Elden: Craft failed");
             }
         }
 
@@ -176,7 +180,7 @@ namespace EldenRing
             if (isUnconscious && !this.lastFrameUnconscious)
             {
                 this.PlayAnimation(DeathType.Death);
-                Log.Information("Fools22: Player died");
+                Log.Information($"Elden: Player died {isUnconscious}");
             }
 
             this.lastFrameUnconscious = isUnconscious;
@@ -347,11 +351,10 @@ namespace EldenRing
 
             if (this.CheckIsSfxEnabled())
             {
-                this.player.Play();
+                audioHandler.PlaySound(AudioTrigger.Death);
+                
             }
         }
-
-
 
         private unsafe bool CheckIsSfxEnabled()
         {
@@ -374,7 +377,7 @@ namespace EldenRing
                         if (name == "IsSndSe")
                         {
                             var value = entry.Value.UInt;
-                            Log.Information("Fools21: {Name} - {Type} - {Value}", name, entry.Type, value);
+                            Log.Information("Elden: {Name} - {Type} - {Value}", name, entry.Type, value);
 
                             seEnabled = value == 0;
                         }
@@ -382,7 +385,7 @@ namespace EldenRing
                         if (name == "IsSndMaster")
                         {
                             var value = entry.Value.UInt;
-                            Log.Information("Fools21: {Name} - {Type} - {Value}", name, entry.Type, value);
+                            Log.Information("Elden: {Name} - {Type} - {Value}", name, entry.Type, value);
 
                             masterEnabled = value == 0;
                         }
@@ -393,24 +396,57 @@ namespace EldenRing
             }
             catch (Exception ex)
             {
-                Log.Error(ex, "Fools21: Error checking if sfx is enabled");
+                Log.Error(ex, "Elden: Error checking if sfx is enabled");
                 return true;
             }
         }
 
         public void Dispose()
         {
-            this.erDeathBgTexture.Dispose();
-            this.erNormalDeathTexture.Dispose();
-            this.erCraftFailedTexture.Dispose();
+            erDeathBgTexture.Dispose();
+            erNormalDeathTexture.Dispose();
+            erCraftFailedTexture.Dispose();
 
-            this.player.Dispose();
+            CommandManager.RemoveHandler(commandName);
+        }
+
+        private void SetVolume(string vol)
+        {
+            try
+            {
+                var newVol = int.Parse(vol) / 100f;
+                Log.Debug($"{Name}: Setting volume to {newVol}");
+                audioHandler.Volume = newVol;
+                chatGui.Print($"Volume set to {vol}%");
+            }
+            catch (Exception)
+            {
+                chatGui.Print("NO");
+            }
         }
 
         private void OnCommand(string command, string args)
         {
-            // in response to the slash command, just display our main ui
-            //this.PluginUi.Visible = true;
+            Log.Debug("{Command} - {Args}", command, args);
+            var argList = args.Split(' ');
+
+            if (argList.Length == 0) return;
+
+            // TODO: This is super rudimentary (garbage) argument parsing. Make it better
+            switch(argList[0])
+            {
+                case "vol":
+                    if (argList.Length != 2) return;
+                    SetVolume(argList[1]);
+                    break;
+                case "":
+                    // in response to the slash command, just display our main ui
+                    //this.PluginUi.Visible = true;
+                    break;
+                default:
+                    break;
+
+            }
         }
     }
 }
