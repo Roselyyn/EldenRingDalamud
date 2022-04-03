@@ -428,7 +428,7 @@ namespace EldenRing
             }
             catch (Exception)
             {
-                chatGui.Print("Please use a number between 0-100");
+                chatGui.PrintError("Please use a number between 0-100");
             }
         }
 
@@ -453,7 +453,7 @@ namespace EldenRing
                 case "":
                     // in response to the slash command, just display our main ui
                     //this.PluginUi.Visible = true;
-                    chatGui.Print("Please use \"/eldenring vol <num>\" to control volume");
+                    chatGui.PrintError("Please use \"/eldenring vol <num>\" to control volume");
                     break;
                 default:
                     break;
