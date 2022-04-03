@@ -131,7 +131,7 @@ namespace EldenRing
 
             CommandManager.AddHandler(commandName, new CommandInfo(OnCommand)
             {
-                HelpMessage = "A useful message to display in /xlhelp"
+                HelpMessage = "Used to control the volume of the audio using \"vol 0-100\""
             });
 
 
