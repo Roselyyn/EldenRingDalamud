@@ -451,8 +451,7 @@ namespace EldenRing
 
         private void PrintCommandHelp()
         {
-            chatGui.Print(@"/eldenring vol <0-100> - Sets sound volume
-                            /eldenring help - Print this help text");
+            chatGui.Print(String.Join(Environment.NewLine, "/eldenring vol <0-100> - Sets sound volume", "/eldenring help - Print this help text"));
         }
 
         private void OnCommand(string command, string args)
