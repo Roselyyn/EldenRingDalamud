@@ -420,29 +420,70 @@ namespace EldenRing
             }
             catch (Exception)
             {
-                chatGui.Print("NO");
+                chatGui.PrintError("NO");
             }
+        }
+
+
+        private enum CommandType
+        {
+            Volume,
+            Help,
+            Invalid
+        }
+
+        private static string CleanArguments(string args)
+        {
+            // Remove accidental double spaces
+            args = args.Replace("  ", "");
+            return args;
+        }
+
+        private static CommandType GetCommandType(string arg)
+        {
+            return arg switch
+            {
+                "v" or "vol" => CommandType.Volume,
+                "h" or "help" => CommandType.Help,
+                _ => CommandType.Invalid,
+            };
+        }
+
+        private void PrintCommandHelp()
+        {
+            chatGui.Print(@"/eldenring vol <0-100> - Sets sound volume
+                            /eldenring help - Print this help text");
         }
 
         private void OnCommand(string command, string args)
         {
-            PluginLog.Debug("{Command} - {Args}", command, args);
-            var argList = args.Split(' ');
 
-            if (argList.Length == 0) return;
-
-            // TODO: This is super rudimentary (garbage) argument parsing. Make it better
-            switch(argList[0])
+            if(string.IsNullOrEmpty(args))
             {
-                case "vol":
+                // TODO: In future we might want to default to opening the config window here instead.
+                PrintCommandHelp();
+                return; 
+            }
+
+            args = CleanArguments(args);
+
+            PluginLog.Debug("{Command} - {Args}", command, args);
+
+            var argList = args.Split(' ');
+            var commandType = GetCommandType(argList[0]);
+
+
+            switch (commandType)
+            {
+                case CommandType.Volume:
                     if (argList.Length != 2) return;
                     SetVolume(argList[1]);
                     break;
-                case "":
-                    // in response to the slash command, just display our main ui
-                    //this.PluginUi.Visible = true;
+                case CommandType.Help:
+                    PrintCommandHelp();
                     break;
-                default:
+                case CommandType.Invalid:
+                    chatGui.PrintError("Invalid command");
                     break;
 
             }
