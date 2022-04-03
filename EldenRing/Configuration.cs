@@ -9,6 +9,8 @@ namespace EldenRing
     {
         public int Version { get; set; } = 0;
 
+        public float Volume { get; set; } = 1;
+
         public bool SomePropertyToBeSavedAndWithADefault { get; set; } = true;
 
         // the below exist just to make saving less cumbersome
@@ -23,7 +25,7 @@ namespace EldenRing
 
         public void Save()
         {
-            this.pluginInterface!.SavePluginConfig(this);
+            pluginInterface!.SavePluginConfig(this);
         }
     }
 }

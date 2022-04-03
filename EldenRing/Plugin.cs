@@ -116,6 +116,9 @@ namespace EldenRing
             condition = Condition;
             CommandManager = commandManager;
 
+            Configuration = pluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
+            Configuration.Initialize(pluginInterface);
+
             //var dalamud = Service<Dalamud>.Get();
             //var interfaceManager = Service<InterfaceManager>.Get();
             //var framework = Service<Framework>.Get();
@@ -135,6 +138,10 @@ namespace EldenRing
                 PluginLog.Error("Elden: Failed to load images");
                 return;
             }
+
+            audioHandler.Volume = Configuration.Volume;
+            int vol = (int)(Configuration.Volume * 100f);
+            PluginLog.Debug($"Volume set to {vol}%");
 
 
             CommandManager.AddHandler(commandName, new CommandInfo(OnCommand)
@@ -413,6 +420,7 @@ namespace EldenRing
             erDeathBgTexture.Dispose();
             erNormalDeathTexture.Dispose();
             erCraftFailedTexture.Dispose();
+            Configuration.Save();
 
             CommandManager.RemoveHandler(commandName);
         }
@@ -424,6 +432,7 @@ namespace EldenRing
                 var newVol = int.Parse(vol) / 100f;
                 PluginLog.Debug($"{Name}: Setting volume to {newVol}");
                 audioHandler.Volume = newVol;
+                Configuration.Volume = newVol;
                 chatGui.Print($"Volume set to {vol}%");
             }
             catch (Exception)
