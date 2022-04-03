@@ -38,15 +38,23 @@ namespace EldenRing
 
         private const string commandName = "/eldenring";
 
+
         private DalamudPluginInterface PluginInterface { get; init; }
+
         private CommandManager CommandManager { get; init; }
+
         private Configuration Configuration { get; init; }
+
         private PluginUI PluginUi { get; init; }
+
         private DataManager DataManager { get; init; }
+
         private Framework framework { get; init; }
-        [PluginService]
+
         private ChatGui chatGui { get; init; }
+
         private GameNetwork gameNetwork { get; init; }
+
         private Condition condition { get; init; }
 
 
@@ -420,7 +428,7 @@ namespace EldenRing
             }
             catch (Exception)
             {
-                chatGui.Print("NO");
+                chatGui.Print("Please use a number between 0-100");
             }
         }
 
@@ -429,10 +437,14 @@ namespace EldenRing
             PluginLog.Debug("{Command} - {Args}", command, args);
             var argList = args.Split(' ');
 
-            if (argList.Length == 0) return;
+            PluginLog.Debug(argList.Length.ToString());
+
+            if (argList.Length == 0)
+                return;
+
 
             // TODO: This is super rudimentary (garbage) argument parsing. Make it better
-            switch(argList[0])
+            switch (argList[0])
             {
                 case "vol":
                     if (argList.Length != 2) return;
@@ -441,10 +453,10 @@ namespace EldenRing
                 case "":
                     // in response to the slash command, just display our main ui
                     //this.PluginUi.Visible = true;
+                    chatGui.Print("Please use \"/eldenring vol <num>\" to control volume");
                     break;
                 default:
                     break;
-
             }
         }
     }
