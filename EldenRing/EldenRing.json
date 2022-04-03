@@ -5,7 +5,7 @@
   "Description": "Currently under development with extra features, should currently function as the April Fools joke did.",
   "InternalName": "EldenRing",
   "ApplicableVersion": "any",
-  "AssemblyVersion": "0.0.0.2",
+  "AssemblyVersion": "0.0.0.3",
   "DalamudApiLevel": 5,
   "LoadPriority": 0,
   "RepoUrl": "https://github.com/Roselyyn/EldenRingDalamud",
