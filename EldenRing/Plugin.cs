@@ -84,6 +84,9 @@ namespace EldenRing
         private int msFadeOutTime = 2000;
         private int msWaitTime = 1600;
 
+        private CommandHandler CommandHandler { get; init; }
+        
+
         private TextureWrap TextTexture => this.currentDeathType switch
         {
             DeathType.Death => this.erNormalDeathTexture,
@@ -119,13 +122,6 @@ namespace EldenRing
             Configuration = pluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
             Configuration.Initialize(pluginInterface);
 
-            //var dalamud = Service<Dalamud>.Get();
-            //var interfaceManager = Service<InterfaceManager>.Get();
-            //var framework = Service<Framework>.Get();
-            //var chatGui = Service<ChatGui>.Get();
-            //var dataMgr = Service<DataManager>.Get();
-            //var gameNetwork = Service<GameNetwork>.Get();
-
             erDeathBgTexture = PluginInterface.UiBuilder.LoadImage(Path.Combine(PluginInterface.AssemblyLocation.Directory?.FullName!, "er_death_bg.png"))!;
             erNormalDeathTexture = PluginInterface.UiBuilder.LoadImage(Path.Combine(PluginInterface.AssemblyLocation.Directory?.FullName!, "er_normal_death.png"))!;
             erCraftFailedTexture = PluginInterface.UiBuilder.LoadImage(Path.Combine(PluginInterface.AssemblyLocation.Directory?.FullName!, "er_craft_failed.png"))!;
@@ -143,12 +139,13 @@ namespace EldenRing
             int vol = (int)(Configuration.Volume * 100f);
             PluginLog.Debug($"Volume set to {vol}%");
 
-
-            CommandManager.AddHandler(commandName, new CommandInfo(OnCommand)
+            CommandHandler = new(chatGui, audioHandler, Configuration);
+            CommandManager.AddHandler(commandName, new CommandInfo(CommandHandler.ProcessCommand)
             {
                 HelpMessage = "Used to control the volume of the audio using \"vol 0-100\""
             });
 
+            
 
             synthesisFailsMessage = DataManager.GetExcelSheet<LogMessage>()!.GetRow(1160)!.Text.ToDalamudString().TextValue;
 
@@ -423,85 +420,6 @@ namespace EldenRing
             Configuration.Save();
 
             CommandManager.RemoveHandler(commandName);
-        }
-
-        private void SetVolume(string vol)
-        {
-            try
-            {
-                var newVol = int.Parse(vol) / 100f;
-                PluginLog.Debug($"{Name}: Setting volume to {newVol}");
-                audioHandler.Volume = newVol;
-                Configuration.Volume = newVol;
-                chatGui.Print($"Volume set to {vol}%");
-            }
-            catch (Exception)
-            {
-                chatGui.PrintError("Please use a number between 0-100");
-            }
-        }
-
-
-        private enum CommandType
-        {
-            Volume,
-            Help,
-            Invalid
-        }
-
-        private static string CleanArguments(string args)
-        {
-            // Remove accidental double spaces
-            args = args.Replace("  ", "");
-            return args;
-        }
-
-        private static CommandType GetCommandType(string arg)
-        {
-            return arg switch
-            {
-                "v" or "vol" => CommandType.Volume,
-                "h" or "help" => CommandType.Help,
-                _ => CommandType.Invalid,
-            };
-        }
-
-        private void PrintCommandHelp()
-        {
-            chatGui.Print(String.Join(Environment.NewLine, "/eldenring vol <0-100> - Sets sound volume", "/eldenring help - Print this help text"));
-        }
-
-        private void OnCommand(string command, string args)
-        {
-
-            if(string.IsNullOrEmpty(args))
-            {
-                // TODO: In future we might want to default to opening the config window here instead.
-                PrintCommandHelp();
-                return; 
-            }
-
-            args = CleanArguments(args);
-
-            PluginLog.Debug("{Command} - {Args}", command, args);
-
-            var argList = args.Split(' ');
-            var commandType = GetCommandType(argList[0]);
-
-
-            switch (commandType)
-            {
-                case CommandType.Volume:
-                    if (argList.Length != 2) return;
-                    SetVolume(argList[1]);
-                    break;
-                case CommandType.Help:
-                    PrintCommandHelp();
-                    break;
-                case CommandType.Invalid:
-                    chatGui.PrintError("Invalid command");
-                    break;
-            }
         }
     }
 }
