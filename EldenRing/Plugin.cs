@@ -38,15 +38,23 @@ namespace EldenRing
 
         private const string commandName = "/eldenring";
 
+
         private DalamudPluginInterface PluginInterface { get; init; }
+
         private CommandManager CommandManager { get; init; }
+
         private Configuration Configuration { get; init; }
+
         private PluginUI PluginUi { get; init; }
+
         private DataManager DataManager { get; init; }
+
         private Framework framework { get; init; }
-        [PluginService]
+
         private ChatGui chatGui { get; init; }
+
         private GameNetwork gameNetwork { get; init; }
+
         private Condition condition { get; init; }
 
 
@@ -108,6 +116,9 @@ namespace EldenRing
             condition = Condition;
             CommandManager = commandManager;
 
+            Configuration = pluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
+            Configuration.Initialize(pluginInterface);
+
             //var dalamud = Service<Dalamud>.Get();
             //var interfaceManager = Service<InterfaceManager>.Get();
             //var framework = Service<Framework>.Get();
@@ -127,6 +138,10 @@ namespace EldenRing
                 PluginLog.Error("Elden: Failed to load images");
                 return;
             }
+
+            audioHandler.Volume = Configuration.Volume;
+            int vol = (int)(Configuration.Volume * 100f);
+            PluginLog.Debug($"Volume set to {vol}%");
 
 
             CommandManager.AddHandler(commandName, new CommandInfo(OnCommand)
@@ -405,6 +420,7 @@ namespace EldenRing
             erDeathBgTexture.Dispose();
             erNormalDeathTexture.Dispose();
             erCraftFailedTexture.Dispose();
+            Configuration.Save();
 
             CommandManager.RemoveHandler(commandName);
         }
@@ -416,11 +432,12 @@ namespace EldenRing
                 var newVol = int.Parse(vol) / 100f;
                 PluginLog.Debug($"{Name}: Setting volume to {newVol}");
                 audioHandler.Volume = newVol;
+                Configuration.Volume = newVol;
                 chatGui.Print($"Volume set to {vol}%");
             }
             catch (Exception)
             {
-                chatGui.PrintError("NO");
+                chatGui.PrintError("Please use a number between 0-100");
             }
         }
 
@@ -484,7 +501,6 @@ namespace EldenRing
                 case CommandType.Invalid:
                     chatGui.PrintError("Invalid command");
                     break;
-
             }
         }
     }
