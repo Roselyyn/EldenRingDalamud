@@ -3,10 +3,12 @@
   <PropertyGroup>
     <Authors></Authors>
     <Company></Company>
-    <Version>0.0.0.3</Version>
+    <Version>0.0.0.4</Version>
     <Description>Elden Ring April Fools addon</Description>
     <Copyright></Copyright>
     <PackageProjectUrl></PackageProjectUrl>
+	<NoWarn>IDE0003</NoWarn>
+	<NoWarn>CA1416</NoWarn>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -48,9 +50,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="DalamudPackager" Version="2.1.5" />
+    <PackageReference Include="DalamudPackager" Version="2.1.6" />
     <PackageReference Include="NAudio" Version="2.0.1" />
-    <PackageReference Include="Serilog" Version="2.10.0" />
     <PackageReference Include="System.ComponentModel.EventBasedAsync" Version="4.3.0" />
     <PackageReference Include="System.Windows.Extensions" Version="6.0.0" />
     <Reference Include="FFXIVClientStructs">
@@ -84,6 +85,6 @@
   </ItemGroup>
 	<Target Name="CopyToDevPlugins" AfterTargets="Build" Condition="'$(Configuration)' == 'Debug'">
 		<Exec Command="if not exist $(AppData)\XIVLauncher\devPlugins\$(TargetName) (mkdir $(AppData)\XIVLauncher\devPlugins\$(TargetName))" />
-		<Exec Command='copy "$(TargetDir)*.*" "$(AppData)\XIVLauncher\devPlugins\$(TargetName)"' />
+		<Exec Command="copy &quot;$(TargetDir)*.*&quot; &quot;$(AppData)\XIVLauncher\devPlugins\$(TargetName)&quot;" />
 	</Target>
 </Project>
