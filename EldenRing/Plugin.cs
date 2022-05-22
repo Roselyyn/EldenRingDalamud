@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 using System.IO;
 using System.Media;
@@ -162,8 +162,9 @@ namespace EldenRing
 
         private unsafe void GameNetworkOnNetworkMessage(IntPtr dataptr, ushort opcode, uint sourceactorid, uint targetactorid, NetworkMessageDirection direction)
         {
-            if (opcode != 0x301)
+            if (opcode != DataManager.ServerOpCodes["ActorControlSelf"]) // pull the opcode from Dalamud's definitions
                 return;
+            
 
             var cat = *(ushort*)(dataptr + 0x00);
             var updateType = *(uint*)(dataptr + 0x08);
@@ -417,6 +418,11 @@ namespace EldenRing
 
         public void Dispose()
         {
+            PluginInterface.UiBuilder.Draw -= Draw;
+            framework.Update -= FrameworkOnUpdate;
+            chatGui.ChatMessage -= ChatGuiOnChatMessage;
+            gameNetwork.NetworkMessage -= GameNetworkOnNetworkMessage;
+
             erDeathBgTexture.Dispose();
             erNormalDeathTexture.Dispose();
             erCraftFailedTexture.Dispose();
