@@ -1,11 +1,9 @@
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.Media;
 using System.Numerics;
 using System.Threading.Tasks;
 
-using Dalamud.Configuration.Internal;
 using Dalamud.Data;
 using Dalamud.Game;
 using Dalamud.Game.ClientState.Conditions;
@@ -16,7 +14,6 @@ using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Interface;
 using Dalamud.Interface.Animation;
 using Dalamud.Interface.Animation.EasingFunctions;
-using Dalamud.Interface.Internal;
 using Dalamud.Memory;
 using Dalamud.Utility;
 using ImGuiNET;
@@ -25,7 +22,7 @@ using Lumina.Excel.GeneratedSheets;
 
 using Condition = Dalamud.Game.ClientState.Conditions.Condition;
 using Dalamud.Game.Command;
-using Dalamud.IoC;
+using Dalamud.Hooking;
 using Dalamud.Plugin;
 using Dalamud.Logging;
 using EldenRing.Audio;
@@ -57,6 +54,13 @@ namespace EldenRing
 
         private Condition condition { get; init; }
 
+        private SigScanner SigScanner { get; init; }
+
+
+        // From: https://github.com/0ceal0t/JobBars/blob/main/JobBars/Helper/Constants.cs
+        private static readonly string ActorControlSig = "E8 ?? ?? ?? ?? 0F B7 0B 83 E9 64";
+        private delegate void ActorControlSelfDelegate(uint entityId, uint id, uint arg0, uint arg1, uint arg2, uint arg3, uint arg4, uint arg5, UInt64 targetId, byte a10);
+        private Hook<ActorControlSelfDelegate> ActorControlSelfHook;
 
         private readonly TextureWrap erDeathBgTexture;
         private readonly TextureWrap erNormalDeathTexture;
@@ -106,7 +110,7 @@ namespace EldenRing
             EnemyFelled,
         }
 
-        public EldenRing(DalamudPluginInterface pluginInterface, DataManager dataManager, Framework frameworkP, ChatGui chat, GameNetwork game, Condition Condition, CommandManager commandManager)
+        public EldenRing(DalamudPluginInterface pluginInterface, DataManager dataManager, Framework frameworkP, ChatGui chat, GameNetwork game, Condition Condition, CommandManager commandManager, SigScanner sigScanner)
         {
             PluginInterface = pluginInterface;
             DataManager = dataManager;
@@ -115,6 +119,7 @@ namespace EldenRing
             gameNetwork = game;
             condition = Condition;
             CommandManager = commandManager;
+            SigScanner = sigScanner;
 
             Configuration = pluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
             Configuration.Initialize(pluginInterface);
@@ -150,6 +155,10 @@ namespace EldenRing
             });
 
 
+            IntPtr actorControlSelfPtr = SigScanner.ScanText(ActorControlSig);
+            ActorControlSelfHook = Hook<ActorControlSelfDelegate>.FromAddress(actorControlSelfPtr, ActorControlSelf);
+            ActorControlSelfHook.Enable();
+
             synthesisFailsMessage = DataManager.GetExcelSheet<LogMessage>()!.GetRow(1160)!.Text.ToDalamudString().TextValue;
 
             assetsReady = true;
@@ -157,19 +166,12 @@ namespace EldenRing
             PluginInterface.UiBuilder.Draw += Draw;
             framework.Update += FrameworkOnUpdate;
             chatGui.ChatMessage += ChatGuiOnChatMessage;
-            gameNetwork.NetworkMessage += GameNetworkOnNetworkMessage;
         }
 
-        private unsafe void GameNetworkOnNetworkMessage(IntPtr dataptr, ushort opcode, uint sourceactorid, uint targetactorid, NetworkMessageDirection direction)
-        {
-            if (opcode != DataManager.ServerOpCodes["ActorControlSelf"]) // pull the opcode from Dalamud's definitions
-                return;
-            
+        private void ActorControlSelf(uint entityId, uint id, uint arg0, uint arg1, uint arg2, uint arg3, uint arg4, uint arg5, UInt64 targetId, byte a10) {
+            ActorControlSelfHook.Original(entityId, id, arg0, arg1, arg2, arg3, arg4, arg5, targetId, a10);
 
-            var cat = *(ushort*)(dataptr + 0x00);
-            var updateType = *(uint*)(dataptr + 0x08);
-
-            if (cat == 0x6D && updateType == 0x40000003)
+            if (id == 0x6D && arg1 == 0x40000003)
             {
                 Task.Delay(1000).ContinueWith(t =>
                 {
@@ -367,7 +369,7 @@ namespace EldenRing
             if (this.CheckIsSfxEnabled())
             {
                 audioHandler.PlaySound(AudioTrigger.Death);
-                
+
             }
         }
 
@@ -418,10 +420,11 @@ namespace EldenRing
 
         public void Dispose()
         {
+            ActorControlSelfHook?.Dispose();
+
             PluginInterface.UiBuilder.Draw -= Draw;
             framework.Update -= FrameworkOnUpdate;
             chatGui.ChatMessage -= ChatGuiOnChatMessage;
-            gameNetwork.NetworkMessage -= GameNetworkOnNetworkMessage;
 
             erDeathBgTexture.Dispose();
             erNormalDeathTexture.Dispose();
