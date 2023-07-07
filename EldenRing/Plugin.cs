@@ -159,7 +159,7 @@ namespace EldenRing
             chatGui.ChatMessage += ChatGuiOnChatMessage;
             dutyState.DutyCompleted += OnDutyComplete;
         }
-        
+
         private void OnDutyComplete(object? sender, ushort e)
         {
             Task.Delay(1000).ContinueWith(t =>
@@ -167,7 +167,7 @@ namespace EldenRing
                 this.PlayAnimation(DeathType.EnemyFelled);
             });
         }
-        
+
         private void ChatGuiOnChatMessage(XivChatType type, uint senderid, ref SeString sender, ref SeString message, ref bool ishandled)
         {
             if (message.TextValue.Contains(this.synthesisFailsMessage))
