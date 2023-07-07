@@ -1,11 +1,9 @@
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.Media;
 using System.Numerics;
 using System.Threading.Tasks;
 
-using Dalamud.Configuration.Internal;
 using Dalamud.Data;
 using Dalamud.Game;
 using Dalamud.Game.ClientState.Conditions;
@@ -16,7 +14,6 @@ using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Interface;
 using Dalamud.Interface.Animation;
 using Dalamud.Interface.Animation.EasingFunctions;
-using Dalamud.Interface.Internal;
 using Dalamud.Memory;
 using Dalamud.Utility;
 using ImGuiNET;
@@ -25,7 +22,7 @@ using Lumina.Excel.GeneratedSheets;
 
 using Condition = Dalamud.Game.ClientState.Conditions.Condition;
 using Dalamud.Game.Command;
-using Dalamud.IoC;
+using Dalamud.Game.DutyState;
 using Dalamud.Plugin;
 using Dalamud.Logging;
 using EldenRing.Audio;
@@ -56,6 +53,8 @@ namespace EldenRing
         private GameNetwork gameNetwork { get; init; }
 
         private Condition condition { get; init; }
+        
+        private DutyState dutyState { get; init; }
 
 
         private readonly TextureWrap erDeathBgTexture;
@@ -106,7 +105,7 @@ namespace EldenRing
             EnemyFelled,
         }
 
-        public EldenRing(DalamudPluginInterface pluginInterface, DataManager dataManager, Framework frameworkP, ChatGui chat, GameNetwork game, Condition Condition, CommandManager commandManager)
+        public EldenRing(DalamudPluginInterface pluginInterface, DataManager dataManager, Framework frameworkP, ChatGui chat, GameNetwork game, Condition Condition, CommandManager commandManager, DutyState DutyState)
         {
             PluginInterface = pluginInterface;
             DataManager = dataManager;
@@ -115,6 +114,7 @@ namespace EldenRing
             gameNetwork = game;
             condition = Condition;
             CommandManager = commandManager;
+            dutyState = DutyState;
 
             Configuration = pluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
             Configuration.Initialize(pluginInterface);
@@ -157,27 +157,17 @@ namespace EldenRing
             PluginInterface.UiBuilder.Draw += Draw;
             framework.Update += FrameworkOnUpdate;
             chatGui.ChatMessage += ChatGuiOnChatMessage;
-            gameNetwork.NetworkMessage += GameNetworkOnNetworkMessage;
+            dutyState.DutyCompleted += OnDutyComplete;
         }
-
-        private unsafe void GameNetworkOnNetworkMessage(IntPtr dataptr, ushort opcode, uint sourceactorid, uint targetactorid, NetworkMessageDirection direction)
+        
+        private void OnDutyComplete(object? sender, ushort e)
         {
-            if (opcode != DataManager.ServerOpCodes["ActorControlSelf"]) // pull the opcode from Dalamud's definitions
-                return;
-            
-
-            var cat = *(ushort*)(dataptr + 0x00);
-            var updateType = *(uint*)(dataptr + 0x08);
-
-            if (cat == 0x6D && updateType == 0x40000003)
+            Task.Delay(1000).ContinueWith(t =>
             {
-                Task.Delay(1000).ContinueWith(t =>
-                {
-                    this.PlayAnimation(DeathType.EnemyFelled);
-                });
-            }
+                this.PlayAnimation(DeathType.EnemyFelled);
+            });
         }
-
+        
         private void ChatGuiOnChatMessage(XivChatType type, uint senderid, ref SeString sender, ref SeString message, ref bool ishandled)
         {
             if (message.TextValue.Contains(this.synthesisFailsMessage))
@@ -421,7 +411,7 @@ namespace EldenRing
             PluginInterface.UiBuilder.Draw -= Draw;
             framework.Update -= FrameworkOnUpdate;
             chatGui.ChatMessage -= ChatGuiOnChatMessage;
-            gameNetwork.NetworkMessage -= GameNetworkOnNetworkMessage;
+            dutyState.DutyCompleted -= OnDutyComplete;
 
             erDeathBgTexture.Dispose();
             erNormalDeathTexture.Dispose();
